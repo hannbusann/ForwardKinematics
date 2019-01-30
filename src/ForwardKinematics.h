@@ -48,9 +48,15 @@ private:
 class ForKinPlus
 {
 public:
-    ForKinPlus(dmotion::ForKin & left, dmotion::ForKin & right);
+    //输入为支撑腿相当于规划起点的x,y,z,r,p,y、摆动腿相当于规划起点的x,y,z,r,p,y
+    ForKinPlus(std::vector<double> supporting, std::vector<double> hanging);
 
-    dmotion::ForKin
+    Eigen::Isometry3d S;
+    Eigen::Isometry3d H;
+    //身体中心点相对于支撑脚的x,y,z,r,p,y
+    std::vector<double> center2support;
+    //摆动脚相对于支撑脚的x,y,z,r,p,y
+    std::vector<double> hang2support;
 
 };
 

@@ -4,6 +4,8 @@
 //
 
 #include <ForwardKinematics.h>
+#include "ForwardKinematics.h"
+
 
 namespace dmotion {
     const double ForKin::upper_leg_length = 12.0;  //大腿的长度
@@ -54,9 +56,9 @@ namespace dmotion {
             result_vector = Matrix2Pose(T);
         } else {
             result_vector = Matrix2Pose(T);
-            result_vector[1] = - result_vector[1];
-            result_vector[3] = - result_vector[3];
-            result_vector[5] = - result_vector[5];
+            result_vector[1] = -result_vector[1];
+            result_vector[3] = -result_vector[3];
+            result_vector[5] = -result_vector[5];
 
         }
 
@@ -64,9 +66,41 @@ namespace dmotion {
 
     }
 
-    ForKinPlus::ForKinPlus(dmotion::ForKin &left, dmotion::ForKin &right) {
+
+    ForKinPlus::ForKinPlus(std::vector<double> supporting, std::vector<double> hanging) {
+
+        S = Eigen::Isometry3d::Identity();
+        H = Eigen::Isometry3d::Identity();
+
+        S.translate(Eigen::Vector3d(supporting[0], 0, 0));
+        S.translate(Eigen::Vector3d(0, supporting[1], 0));
+        S.translate(Eigen::Vector3d(0, 0, supporting[2]));
+        Eigen::AngleAxisd support_yaw(dmotion::Deg2Rad(supporting[5]), Eigen::Vector3d(0, 0, 1));
+        Eigen::AngleAxisd support_pitch(dmotion::Deg2Rad(supporting[4]), Eigen::Vector3d(0, 1, 0));
+        Eigen::AngleAxisd support_roll(dmotion::Deg2Rad(supporting[3]), Eigen::Vector3d(1, 0, 0));
+        S.rotate(support_yaw);
+        S.rotate(support_pitch);
+        S.rotate(support_roll);
+
+
+        H.translate(Eigen::Vector3d(hanging[0], 0, 0));
+        H.translate(Eigen::Vector3d(0, hanging[1], 0));
+        H.translate(Eigen::Vector3d(0, 0, hanging[2]));
+        Eigen::AngleAxisd hang_yaw(dmotion::Deg2Rad(hanging[5]), Eigen::Vector3d(0, 0, 1));
+        Eigen::AngleAxisd hang_pitch(dmotion::Deg2Rad(hanging[4]), Eigen::Vector3d(0, 1, 0));
+        Eigen::AngleAxisd hang_roll(dmotion::Deg2Rad(hanging[3]), Eigen::Vector3d(1, 0, 0));
+        H.rotate(hang_yaw);
+        H.rotate(hang_pitch);
+        H.rotate(hang_roll);
+        //身体中心相对于支撑脚的变换矩阵为S_inv，也就是S的逆矩阵
+        Eigen::Isometry3d S_inv = S.inverse();
+        center2support = Matrix2Pose(S_inv);
+        //摆动脚相对于支撑脚的变换矩阵为H2S
+        Eigen::Isometry3d H2S(S_inv.matrix()*H.matrix());
+        hang2support = Matrix2Pose(H2S);
 
     }
+
 
     std::vector<double> Matrix2Pose(Eigen::Isometry3d M) {
         std::vector<double> pose;
