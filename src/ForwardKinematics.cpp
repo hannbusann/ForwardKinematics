@@ -14,7 +14,7 @@ namespace dmotion {
     const double ForKin::hip_z_from_origin = 8.0;  //髋关节点相对于身体中心原点的z
     ForKin::ForKin(const std::vector<double> angles, bool isRight) {
         for (unsigned i = 0; i < angles.size(); i++) {
-                angles_.emplace_back(angles[i]*M_PI/180.0);
+            angles_.emplace_back(angles[i] * M_PI / 180.0);
         }
         isRight_ = isRight;
         double distance_tmp = std::sqrt(half_hip_width * half_hip_width + hip_x_from_origin * hip_x_from_origin);
@@ -33,50 +33,53 @@ namespace dmotion {
 
         T = Eigen::Isometry3d::Identity();
 
-        for(int i = 0; i< 7; i++)
-        {
-                Eigen::AngleAxisd rotate_yaw(theta[i],Eigen::Vector3d(0,0,1));
-                Eigen::AngleAxisd rotate_roll(alpha[i],Eigen::Vector3d(1,0,0));
-                T.rotate(rotate_yaw);
-                T.translate(Eigen::Vector3d(0,0,d[i]));
-                T.translate(Eigen::Vector3d(a[i],0,0));
-                T.rotate(rotate_roll);
+        for (int i = 0; i < 7; i++) {
+            Eigen::AngleAxisd rotate_yaw(theta[i], Eigen::Vector3d(0, 0, 1));
+            Eigen::AngleAxisd rotate_roll(alpha[i], Eigen::Vector3d(1, 0, 0));
+            T.rotate(rotate_yaw);
+            T.translate(Eigen::Vector3d(0, 0, d[i]));
+            T.translate(Eigen::Vector3d(a[i], 0, 0));
+            T.rotate(rotate_roll);
         }
-
-        Eigen::AngleAxisd rotate_pitch90(-M_PI/2,Eigen::Vector3d(0,1,0));
-        Eigen::AngleAxisd rotate_yaw90(M_PI/2,Eigen::Vector3d(0,0,1));
+        //这两步是用于保证脚末端的坐标系在所有关节角都为0时，和世界坐标系统一
+        Eigen::AngleAxisd rotate_pitch90(-M_PI / 2, Eigen::Vector3d(0, 1, 0));
+        Eigen::AngleAxisd rotate_yaw90(M_PI / 2, Eigen::Vector3d(0, 0, 1));
         T.rotate(rotate_pitch90);
         T.rotate(rotate_yaw90);
-//
-std::cout << T.matrix() << std::endl;
+
+        std::cout << T.matrix() << std::endl;
 
 
-//    Eigen::AngleAxisd rotate_yaw(1.57,Eigen::Vector3d(0,0,1));
-//        Eigen::AngleAxisd rotate_roll(2,Eigen::Vector3d(1,0,0));
-//        T.rotate(rotate_yaw);
-//        T.translate(Eigen::Vector3d(0,0,0));
-//        T.translate(Eigen::Vector3d(4.5,0,0));
-//        T.rotate(rotate_roll);
-//        std::cout <<a[0] <<std::endl;
-//        std::cout <<theta[0] <<std::endl;
+        if (0 == isRight_) {
+            result_vector = Matrix2Pose(T);
+        } else {
+            result_vector = Matrix2Pose(T);
+            result_vector[1] = - result_vector[1];
+            result_vector[3] = - result_vector[3];
+            result_vector[5] = - result_vector[5];
 
-        roll_result = dmotion::Rad2Deg(dmotion::Atan(T.matrix()(2,1),T.matrix()(2,2)));
-        pitch_result = dmotion::Rad2Deg(std::asin(-T.matrix()(2,0)));
-        yaw_result = dmotion::Rad2Deg(dmotion::Atan(T.matrix()(1,0),T.matrix()(0,0)));
-        x_result = T.matrix()(0,3);
-        y_result = T.matrix()(1,3);
-        z_result = T.matrix()(2,3);
-
-        result_vector.emplace_back(x_result);
-        result_vector.emplace_back(y_result);
-        result_vector.emplace_back(z_result);
-        result_vector.emplace_back(roll_result);
-        result_vector.emplace_back(pitch_result);
-        result_vector.emplace_back(yaw_result);
+        }
 
         dmotion::PrintVector(result_vector);
 
+    }
+
+    ForKinPlus::ForKinPlus(dmotion::ForKin &left, dmotion::ForKin &right) {
 
     }
+
+    std::vector<double> Matrix2Pose(Eigen::Isometry3d M) {
+        std::vector<double> pose;
+        pose.emplace_back(M.matrix()(0, 3));
+        pose.emplace_back(M.matrix()(1, 3));
+        pose.emplace_back(M.matrix()(2, 3));
+
+        pose.emplace_back(dmotion::Rad2Deg(dmotion::Atan(M.matrix()(2, 1), M.matrix()(2, 2))));
+        pose.emplace_back(dmotion::Rad2Deg(std::asin(-M.matrix()(2, 0))));
+        pose.emplace_back(dmotion::Rad2Deg(dmotion::Atan(M.matrix()(1, 0), M.matrix()(0, 0))));
+
+        return pose;
+    }
+
 
 }

@@ -34,16 +34,33 @@ public:
     double yaw_result;
 
     std::vector<double> result_vector;
-
+    Eigen::Isometry3d T;
 private:
 
     std::vector<double> alpha;
     std::vector<double> a;
     std::vector<double> d;
     std::vector<double> theta;
-    Eigen::Isometry3d T;
 
 };
+
+
+class ForKinPlus
+{
+public:
+    ForKinPlus(dmotion::ForKin & left, dmotion::ForKin & right);
+
+    dmotion::ForKin
+
+};
+
+
+
+
+//把旋转矩阵转换为x,y,z,r,p,y
+std::vector<double> Matrix2Pose(Eigen::Isometry3d M);
+
+
 }
 
 #endif //PROJECT_FORWARDKINEMATICS_H
